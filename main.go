@@ -17,6 +17,7 @@ var (
 )
 
 type ResponseMsg struct {
+	UrlSent string
 	Features []Feature `json:"features"`
 }
 
@@ -66,7 +67,7 @@ func crawl(url string, ch chan ResponseMsg) {
 		fmt.Println("Invalid JSON response", err)
 		close(ch)
 	}
-
+	response.UrlSent = url
 	ch <- response
 	return
 }
@@ -80,6 +81,8 @@ func main() {
 	// Channels
 	chUrls := make(chan ResponseMsg)
 
+	numLines := len(lines)
+
 	for i, line := range lines {
 		seedUrls := "https://api.phila.gov/ais_ps/v1/addresses/"
 		fmt.Println("line - ", i)
@@ -90,10 +93,11 @@ func main() {
 		fmt.Println("Feed URL - ", seedUrls)
 
 		go crawl(seedUrls, chUrls)
-
-		response := <-chUrls
-		fmt.Println(response.Features)
   	}
 
-	defer close(chUrls)
+	for i:=0; i < numLines; i++ {
+		msg := <- chUrls
+		fmt.Println("For - ", msg.UrlSent)
+		fmt.Println(msg.Features)
+	}
 }
