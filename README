@@ -12,3 +12,17 @@ As the json response comes back it is parsed into a struct which is printed to t
 
 If you want to build a OS specific runtime you can us GOOS env variable (https://golang.org/cmd/go/)
 
+#Output
+
+Output for test data in address.in.txt
+
+./philagov
+line -  0
+Feed URL -  https://api.phila.gov/ais_ps/v1/addresses/1500 market street?include_units=42&opa_only=
+[{{1500 MARKET ST  883320000}} {{1500S MARKET ST  875100060}}]
+line -  1
+Feed URL -  https://api.phila.gov/ais_ps/v1/addresses/1600 market street?include_units=44&opa_only=
+[{{1600 MARKET ST  883031500}} {{1600R MARKET ST  883031500}}]
+line -  2
+Feed URL -  https://api.phila.gov/ais_ps/v1/addresses/1700 market street?include_units=45&opa_only=
+[{{1700 MARKET ST  883032000}}]
