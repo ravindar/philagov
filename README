@@ -1,7 +1,7 @@
-# Phila address lookup
+#Phila address lookup
 Calls philly api concurrently to get address details
 
-# To run
+#To run
 
 go build
 
