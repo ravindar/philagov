@@ -7,6 +7,7 @@ go build
 
 The runtime file (philagov) expects a file "address.in.txt" that contains address and unit number separated by comma.
 It calls the api concurrently for each line in address.in.txt.
+The response for each API call for each address is logged in address.out.txt
 
 As the json response comes back it is parsed into a struct which is printed to the command line.
 
