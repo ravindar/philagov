@@ -9,6 +9,8 @@ import (
 	"os"
 	"log"
 	"strings"
+	"sync"
+	"io"
 )
 
 var (
@@ -50,6 +52,7 @@ func readLines(path string) ([]string, error) {
 }
 
 func crawl(url string, searchAddress string, ch chan ResponseMsg) {
+	fmt.Println("processing address ", searchAddress)
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -83,7 +86,24 @@ func main() {
 	// Channels
 	chUrls := make(chan ResponseMsg)
 
-	numLines := len(lines)
+	fout, err := os.Create("address.out.txt")
+
+	if err != nil {
+		panic("can't write to out file")
+	}
+
+	defer fout.Close()
+	w := bufio.NewWriter(fout)
+	wg := sync.WaitGroup{}
+	lock := sync.RWMutex{}
+	numWorkers := 20
+	wg.Add(numWorkers)
+
+	// launch a goroutine for each numWorker
+	for i:=0; i < numWorkers; i++ {
+		go work(chUrls, w, &wg, &lock)
+	}
+
 
 	for i, line := range lines {
 		seedUrls := "https://api.phila.gov/ais_ps/v1/addresses/"
@@ -105,18 +125,20 @@ func main() {
 
 		go crawl(seedUrls, addressRead, chUrls)
   	}
+	wg.Wait()
+	w.Flush()
 
-	fout, err := os.Create("address.out.txt")
+}
 
-	if err != nil {
-		panic("can't write to out file")
-	}
-
-	defer fout.Close()
-
-	w := bufio.NewWriter(fout)
-	for i:=0; i < numLines; i++ {
-		msg := <- chUrls
+func work(ch chan ResponseMsg, w io.Writer, wg *sync.WaitGroup, lock *sync.RWMutex) {
+	defer wg.Done()
+	for {
+		msg, ok := <- ch
+		fmt.Println("WORK processing ", msg)
+		if !ok {
+			return
+		}
+		lock.Lock()
 		fmt.Fprintln(w, "For Address - "+msg.SearchAddress)
 		fmt.Fprintln(w, "API Call - "+msg.UrlSent)
 		for n, featureFound := range msg.Features{
@@ -127,6 +149,6 @@ func main() {
 			fmt.Fprintln(w, "OPANumber - "+ featureFound.Properties.OPANumber)
 		}
 		fmt.Fprintln(w, "------")
+		lock.Unlock()
 	}
-	w.Flush()
 }
