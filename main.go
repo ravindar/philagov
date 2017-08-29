@@ -87,9 +87,18 @@ func main() {
 		seedUrls := "https://api.phila.gov/ais_ps/v1/addresses/"
 		fmt.Println("line - ", i)
 
-		addresses := strings.Split(line, ",")
+		addressRead := ""
+		unitNoRead := ""
 
-		seedUrls = seedUrls + html.EscapeString(strings.TrimSpace(addresses[0])) + "?include_units=" + strings.TrimSpace(addresses[1]) + "&opa_only="
+		addresses := strings.Split(line, ",")
+		if len(addresses) == 2 {
+			addressRead = strings.TrimSpace(addresses[0])
+			unitNoRead = strings.TrimSpace(addresses[1])
+		} else if len(addresses) == 1  {
+			addressRead = strings.TrimSpace(addresses[0])
+		}
+
+		seedUrls = seedUrls + html.EscapeString(addressRead) + "?include_units=" + unitNoRead + "&opa_only="
 		fmt.Println("Feed URL - ", seedUrls)
 
 		go crawl(seedUrls, chUrls)
