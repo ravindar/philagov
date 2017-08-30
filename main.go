@@ -18,9 +18,9 @@ var (
 	unitno  []string
 )
 
-type ResponseMsg struct {
+type Response struct {
 	SearchAddress string
-	UrlSent       string
+	APIEndpoint   string
 	Features      []Feature `json:"features"`
 }
 
@@ -51,30 +51,28 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-func crawl(url string, searchAddress string, ch chan ResponseMsg) {
-	fmt.Println("processing address ", searchAddress)
-	resp, err := http.Get(url)
+func call(apiEndpoint string, searchAddress string, jobsToPerform chan Response) {
+	resp, err := http.Get(apiEndpoint)
 
 	if err != nil {
-		fmt.Println("ERROR: Failed to crawl \"" + url + "\"")
-		close(ch)
+		fmt.Println("ERROR: Failed to crawl \"" + apiEndpoint + "\"")
+		close(jobsToPerform)
 		return
 	}
 
 	defer resp.Body.Close()
 
-	var response ResponseMsg
+	var response Response
 
 	err = json.NewDecoder(resp.Body).Decode(&response)
 
 	if err != nil {
 		fmt.Println("Invalid JSON response", err)
-		close(ch)
+		close(jobsToPerform)
 	}
-	response.UrlSent = url
+	response.APIEndpoint = apiEndpoint
 	response.SearchAddress = searchAddress
-	ch <- response
-	return
+	jobsToPerform <- response
 }
 
 func main() {
@@ -84,7 +82,8 @@ func main() {
 	}
 
 	// Channels
-	chUrls := make(chan ResponseMsg)
+	jobsToPerform := make(chan Response)
+	completedJobs := make(chan int)
 
 	fout, err := os.Create("address.out.txt")
 
@@ -94,60 +93,62 @@ func main() {
 
 	defer fout.Close()
 	w := bufio.NewWriter(fout)
-	wg := sync.WaitGroup{}
+	fmt.Fprintln(w, "Addresss, UnitNo(Response), OPANumber(Response), API")
 	lock := sync.RWMutex{}
-	numWorkers := 20
-	wg.Add(numWorkers)
+	numJobsToPerform := len(lines)
 
 	// launch a goroutine for each numWorker
-	for i := 0; i < numWorkers; i++ {
-		go work(chUrls, w, &wg, &lock)
+	for i := 0; i < numJobsToPerform; i++ {
+		go worker(jobsToPerform, w, &lock, completedJobs)
 	}
 
-	for i, line := range lines {
-		seedUrls := "https://api.phila.gov/ais_ps/v1/addresses/"
-		fmt.Println("line - ", i)
+	for _, line := range lines {
+		apiEndpoint := "https://api.phila.gov/ais_ps/v1/addresses/"
+		//fmt.Println("line - ", i)
 
-		addressRead := ""
+		searchAddress := ""
 		unitNoRead := ""
 
 		addresses := strings.Split(line, ",")
 		if len(addresses) == 2 {
-			addressRead = strings.TrimSpace(addresses[0])
+			searchAddress = strings.TrimSpace(addresses[0])
 			unitNoRead = strings.TrimSpace(addresses[1])
 		} else if len(addresses) == 1 {
-			addressRead = strings.TrimSpace(addresses[0])
+			searchAddress = strings.TrimSpace(addresses[0])
 		}
 
-		seedUrls = seedUrls + html.EscapeString(addressRead) + "?include_units=" + unitNoRead + "&opa_only="
-		fmt.Println("Feed URL - ", seedUrls)
+		apiEndpoint = apiEndpoint + html.EscapeString(searchAddress) + "?include_units=" + unitNoRead + "&opa_only="
+		//fmt.Println("Feed URL - ", apiEndpoint)
 
-		go crawl(seedUrls, addressRead, chUrls)
+		go call(apiEndpoint, searchAddress, jobsToPerform)
 	}
-	wg.Wait()
-	w.Flush()
+
+	numJobsCompleted := 0
+	for {
+		k := <- completedJobs
+		numJobsCompleted += k
+		if numJobsCompleted >= numJobsToPerform {
+			w.Flush()
+			return
+		}
+	}
+
 
 }
 
-func work(ch chan ResponseMsg, w io.Writer, wg *sync.WaitGroup, lock *sync.RWMutex) {
-	defer wg.Done()
+func worker(jobsToPerform chan Response, w io.Writer, lock *sync.RWMutex, completedJobs chan int) {
 	for {
-		msg, ok := <-ch
-		fmt.Println("WORK processing ", msg)
-		if !ok {
-			return
-		}
+		msg := <-jobsToPerform
+		writtenMsg := ""
 		lock.Lock()
-		fmt.Fprintln(w, "For Address - "+msg.SearchAddress)
-		fmt.Fprintln(w, "API Call - "+msg.UrlSent)
-		for n, featureFound := range msg.Features {
-			fmt.Println("feature - ", n)
-			fmt.Fprintln(w, "--- Response ", n)
-			fmt.Fprintln(w, "Address - "+featureFound.Properties.Address)
-			fmt.Fprintln(w, "Unit Number - "+featureFound.Properties.UnitNumber)
-			fmt.Fprintln(w, "OPANumber - "+featureFound.Properties.OPANumber)
+		for _, featureFound := range msg.Features {
+			writtenMsg += msg.SearchAddress+","
+			writtenMsg += featureFound.Properties.UnitNumber+","
+			writtenMsg += featureFound.Properties.OPANumber+","
+			writtenMsg += msg.APIEndpoint
 		}
-		fmt.Fprintln(w, "------")
+		fmt.Fprintln(w, writtenMsg)
+		completedJobs <- 1
 		lock.Unlock()
 	}
 }
