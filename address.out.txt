@@ -1,15 +1,1 @@
-Addresss, UnitNo(Response), OPANumber(Response), API
-1500 market street,,883320000,https://api.phila.gov/ais_ps/v1/addresses/1500 market street?include_units=42&opa_only=1500 market street,,875100060,https://api.phila.gov/ais_ps/v1/addresses/1500 market street?include_units=42&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1700 market street,,883032000,https://api.phila.gov/ais_ps/v1/addresses/1700 market street?include_units=45&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1900 market street,,883034000,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=1900 market street,,875100240,https://api.phila.gov/ais_ps/v1/addresses/1900 market street?include_units=&opa_only=
-1750 market street,,883032500,https://api.phila.gov/ais_ps/v1/addresses/1750 market street?include_units=&opa_only=
-1600 market street,,883031500,https://api.phila.gov/ais_ps/v1/addresses/1600 market street?include_units=44&opa_only=1600 market street,,883031500,https://api.phila.gov/ais_ps/v1/addresses/1600 market street?include_units=44&opa_only=
-1800 market street,H1,883700600,https://api.phila.gov/ais_ps/v1/addresses/1800 market street?include_units=&opa_only=
+"Addresss, UnitNo(Response), OPANumber(Response), API"

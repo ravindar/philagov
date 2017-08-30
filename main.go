@@ -5,17 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/net/html"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
-)
-
-var (
-	address []string
-	unitno  []string
+	"encoding/csv"
 )
 
 type Response struct {
@@ -51,12 +46,12 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-func call(apiEndpoint string, searchAddress string, jobsToPerform chan Response) {
+func call(apiEndpoint string, searchAddress string, jobs chan Response) {
 	resp, err := http.Get(apiEndpoint)
 
 	if err != nil {
 		fmt.Println("ERROR: Failed to crawl \"" + apiEndpoint + "\"")
-		close(jobsToPerform)
+		close(jobs)
 		return
 	}
 
@@ -68,11 +63,11 @@ func call(apiEndpoint string, searchAddress string, jobsToPerform chan Response)
 
 	if err != nil {
 		fmt.Println("Invalid JSON response", err)
-		close(jobsToPerform)
+		close(jobs)
 	}
 	response.APIEndpoint = apiEndpoint
 	response.SearchAddress = searchAddress
-	jobsToPerform <- response
+	jobs <- response
 }
 
 func main() {
@@ -82,8 +77,7 @@ func main() {
 	}
 
 	// Channels
-	jobsToPerform := make(chan Response)
-	completedJobs := make(chan int)
+	jobs := make(chan Response)
 
 	fout, err := os.Create("address.out.txt")
 
@@ -92,14 +86,16 @@ func main() {
 	}
 
 	defer fout.Close()
-	w := bufio.NewWriter(fout)
-	fmt.Fprintln(w, "Addresss, UnitNo(Response), OPANumber(Response), API")
+	wg := sync.WaitGroup{}
+	w := csv.NewWriter(bufio.NewWriter(fout))
+	w.Write([]string{"Addresss, UnitNo(Response), OPANumber(Response), API"})
 	lock := sync.RWMutex{}
 	numJobsToPerform := len(lines)
+	wg.Add(numJobsToPerform)
 
 	// launch a goroutine for each numWorker
 	for i := 0; i < numJobsToPerform; i++ {
-		go worker(jobsToPerform, w, &lock, completedJobs)
+		go worker(jobs, w, &lock, &wg)
 	}
 
 	for _, line := range lines {
@@ -120,37 +116,19 @@ func main() {
 		apiEndpoint = apiEndpoint + html.EscapeString(searchAddress) + "?include_units=" + unitNoRead + "&opa_only="
 		//fmt.Println("Feed URL - ", apiEndpoint)
 
-		go call(apiEndpoint, searchAddress, jobsToPerform)
+		go call(apiEndpoint, searchAddress, jobs)
 	}
 
-	numJobsCompleted := 0
-	for {
-		k := <- completedJobs
-		numJobsCompleted += k
-		if numJobsCompleted >= numJobsToPerform {
-			w.Flush()
-			return
-		}
-	}
-
-
+	wg.Wait()
+	w.Flush()
 }
 
-func worker(jobsToPerform chan Response, w io.Writer, lock *sync.RWMutex, completedJobs chan int) {
-	for {
-		msg := <-jobsToPerform
-		writtenMsg := ""
-		for _, featureFound := range msg.Features {
-			writtenMsg += msg.SearchAddress+","
-			writtenMsg += featureFound.Properties.UnitNumber+","
-			writtenMsg += featureFound.Properties.OPANumber+","
-			writtenMsg += msg.APIEndpoint
-		}
-
+func worker(jobs chan Response, w *csv.Writer, lock *sync.RWMutex, wg *sync.WaitGroup) {
+	defer wg.Done()
+	msg := <-jobs
+	for _, featureFound := range msg.Features {
 		lock.Lock()
-		fmt.Fprintln(w, writtenMsg)
+		w.Write([]string{msg.SearchAddress, featureFound.Properties.UnitNumber, featureFound.Properties.OPANumber, msg.APIEndpoint})
 		lock.Unlock()
-		completedJobs <- 1
-
 	}
 }
