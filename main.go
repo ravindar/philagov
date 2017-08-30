@@ -140,15 +140,17 @@ func worker(jobsToPerform chan Response, w io.Writer, lock *sync.RWMutex, comple
 	for {
 		msg := <-jobsToPerform
 		writtenMsg := ""
-		lock.Lock()
 		for _, featureFound := range msg.Features {
 			writtenMsg += msg.SearchAddress+","
 			writtenMsg += featureFound.Properties.UnitNumber+","
 			writtenMsg += featureFound.Properties.OPANumber+","
 			writtenMsg += msg.APIEndpoint
 		}
+
+		lock.Lock()
 		fmt.Fprintln(w, writtenMsg)
-		completedJobs <- 1
 		lock.Unlock()
+		completedJobs <- 1
+
 	}
 }
